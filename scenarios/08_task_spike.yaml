@@ -1,0 +1,32 @@
+# Task Spike Test Case
+#
+# 16 tasks at t=0; 12 more tasks arriving as a sudden spike at t=10s.
+# Adaptive expected to absorb the spike better, avoiding routing many
+# heavy/very_heavy tasks to already-stressed nodes.
+
+name: task_spike
+description: |
+  16 tasks at t=0 (6 lightweight, 4 moderate, 4 heavy, 2 very_heavy);
+  12 spike tasks at t=10 (4 lightweight, 3 moderate, 3 heavy, 2 very_heavy).
+  Total 28 tasks across two arrival waves.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 8000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 6
+      moderate: 4
+      heavy: 4
+      very_heavy: 2
+  - at: 10.0
+    tasks:
+      lightweight: 4
+      moderate: 3
+      heavy: 3
+      very_heavy: 2

@@ -1,0 +1,38 @@
+# Alpha Testing
+#
+# Fixed 8-task set under controlled conditions. Verifies the scheduling
+# process works end-to-end: every task is received, scheduled, executed,
+# and completed; no infeasible allocations; nothing skipped/duplicated.
+# Single trial — controlled means deterministic behavior expected.
+
+test_id: alpha
+type: alpha
+description: |
+  3 lightweight + 2 moderate + 2 heavy + 1 very_heavy under heterogeneous
+  configuration. Verifies the full scheduling pipeline.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 1
+seed: 100000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 3
+      moderate: 2
+      heavy: 2
+      very_heavy: 1
+
+assertions:
+  - all_tasks_have_terminal_status
+  - no_unsupported_allocations
+  - no_duplicate_assignments
+  - all_assignments_logged
+  - no_task_skipped
+  - sufficient_memory_for_each_assignment
+  - edge1_only_lightweight
+  - very_heavy_only_on_edge3_or_edge4
+  - scheduler_did_not_hang

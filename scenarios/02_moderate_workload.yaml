@@ -1,0 +1,25 @@
+# Moderate Workload Test Case
+#
+# 24 tasks at t=0 — normal operating demand on a resource-constrained
+# edge environment. Expected: balanced workload, no excessive memory
+# pressure on edge2/edge3 when edge4 has free capacity.
+
+name: moderate_workload
+description: |
+  24 mixed tasks at t=0 (8 lightweight, 7 moderate, 6 heavy, 3 very_heavy).
+  Tests balanced placement under typical demand.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 2000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 8
+      moderate: 7
+      heavy: 6
+      very_heavy: 3

@@ -1,0 +1,48 @@
+# Dashboard image. Streamlit-based; talks to the scheduler service via HTTP
+# and reads results/ as a shared bind mount.
+
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1\
+    PYTHONPATH=/app
+WORKDIR /app
+
+# matplotlib needs a few small system deps to render PNGs without an X
+# server, since the Results page can re-run plot regeneration in-place.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libfreetype6 \
+        libpng16-16 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Same dependency set as the scheduler image — the dashboard imports
+# scheduler.analysis.* and verification.* in-process to drive runs from
+# the UI, so they need to be installable here too.
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt \
+    && pip install "streamlit>=1.30,<2.0"
+
+# Copy every package the dashboard touches at runtime.
+COPY shared/        /app/shared/
+COPY edge/          /app/edge/
+COPY scheduler/     /app/scheduler/
+COPY workload/      /app/workload/
+COPY verification/  /app/verification/
+COPY dashboard/     /app/dashboard/
+
+RUN useradd --create-home --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8501
+
+# Streamlit binds 0.0.0.0 explicitly so the port is reachable from the
+# host. server.headless=true silences the "open in browser" prompt that
+# uvicorn-style logs would otherwise print.
+CMD ["streamlit", "run", "dashboard/app.py", \
+     "--server.port=8501", \
+     "--server.address=0.0.0.0", \
+     "--server.headless=true"]

@@ -1,0 +1,52 @@
+# Scheduler service image. Includes the analysis layer dependencies
+# (pandas, scipy, matplotlib, numpy) so /analysis endpoints work inside
+# the container.
+
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# matplotlib needs a few small system deps to render PNGs without an
+# X server. The slim image doesn't ship them, but they are tiny.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libfreetype6 \
+        libpng16-16 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies. Copy requirements.txt first to keep layer cache
+# friendly to code-only changes.
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
+
+# Copy the packages the scheduler needs at runtime.
+COPY shared/    /app/shared/
+COPY scheduler/ /app/scheduler/
+COPY workload/  /app/workload/
+
+# scenarios/ and tests/ are mounted as read-only volumes in
+# docker-compose.yml, so the scenario / verification runners (which
+# could be invoked from inside the container in the future) can find
+# them at the same paths used in development.
+#
+# results/ is a writable bind mount, also defined in compose.
+
+# Run as non-root. The volume mount for results needs the host
+# directory to be writable by the container UID — the compose file
+# documents this.
+RUN useradd --create-home --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=10s --timeout=2s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request, sys; \
+        sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=1).status == 200 else 1)"
+
+CMD ["uvicorn", "scheduler.service:app", "--host", "0.0.0.0", "--port", "8000"]

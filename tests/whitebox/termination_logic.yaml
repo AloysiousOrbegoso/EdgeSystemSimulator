@@ -1,0 +1,31 @@
+# White-Box: Termination Logic
+#
+# 15 tasks of mixed memory requirements. Verify the scheduler ends only
+# after all feasible tasks have been processed and the queue is empty.
+
+test_id: whitebox_termination_logic
+type: whitebox
+description: |
+  Termination check: 15 tasks of mixed classes, all should reach a
+  terminal status and the scheduling loop should not continue past
+  drain.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 1
+seed: 150000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 5
+      moderate: 4
+      heavy: 4
+      very_heavy: 2
+
+assertions:
+  - all_tasks_have_terminal_status
+  - scheduler_did_not_hang
+  - no_duplicate_assignments

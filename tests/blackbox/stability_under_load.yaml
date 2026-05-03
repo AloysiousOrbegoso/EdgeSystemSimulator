@@ -1,0 +1,54 @@
+# Black-Box: Stability Under Load
+#
+# Three sub-runs (low / moderate / high) at 12 / 24 / 40 tasks, each
+# repeated 5 times. Verifies the system remains operational at every
+# load level — no scheduler hangs, no node crashes, all tasks reach a
+# terminal status.
+
+test_id: blackbox_stability_under_load
+type: blackbox
+description: |
+  Stability across three workload sizes. 15 verification trials per
+  algorithm (3 sub-runs × 5 trials).
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+seed_base: 170000
+
+sub_runs:
+  - name: low_load
+    trials: 5
+    arrivals:
+      - at: 0.0
+        tasks:
+          lightweight: 4
+          moderate: 4
+          heavy: 3
+          very_heavy: 1
+  - name: moderate_load
+    trials: 5
+    arrivals:
+      - at: 0.0
+        tasks:
+          lightweight: 8
+          moderate: 7
+          heavy: 6
+          very_heavy: 3
+  - name: high_load
+    trials: 5
+    arrivals:
+      - at: 0.0
+        tasks:
+          lightweight: 12
+          moderate: 10
+          heavy: 10
+          very_heavy: 8
+
+assertions:
+  - scheduler_did_not_hang
+  - no_node_crashed
+  - no_unhandled_exceptions
+  - all_tasks_have_terminal_status
+  - no_unsupported_allocations

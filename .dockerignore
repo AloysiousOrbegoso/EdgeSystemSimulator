@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+*.pyo
+
+.venv/
+venv/
+.env
+
+results/
+.git/
+.gitignore
+.dockerignore
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local docs and notes that don't ship in the image
+*.md
+!ARCHITECTURE.md

@@ -1,0 +1,59 @@
+# Homogeneous Edge Node Test Case
+#
+# All four edge nodes have identical config: 128 KB RAM, 1 MB flash,
+# 90 KB usable. Inline `nodes:` overrides the default heterogeneous
+# preset. Expected: both algorithms succeed; adaptive maintains more
+# consistent distribution (no clustering).
+
+name: homogeneous
+description: |
+  Four identical 128 KB / 1 MB nodes; 24 mixed tasks at t=0.
+  Isolates the effect of adaptivity under equal capacity.
+
+nodes:
+  - node_id: edge1
+    url: http://edge1:5000
+    total_ram_kb: 128
+    usable_ram_kb: 90
+    flash_kb: 1024
+    saturation_threshold_kb: 102
+    cpu_cores: 1
+    accepted_classes: [lightweight, moderate, heavy]
+  - node_id: edge2
+    url: http://edge2:5000
+    total_ram_kb: 128
+    usable_ram_kb: 90
+    flash_kb: 1024
+    saturation_threshold_kb: 102
+    cpu_cores: 1
+    accepted_classes: [lightweight, moderate, heavy]
+  - node_id: edge3
+    url: http://edge3:5000
+    total_ram_kb: 128
+    usable_ram_kb: 90
+    flash_kb: 1024
+    saturation_threshold_kb: 102
+    cpu_cores: 1
+    accepted_classes: [lightweight, moderate, heavy]
+  - node_id: edge4
+    url: http://edge4:5000
+    total_ram_kb: 128
+    usable_ram_kb: 90
+    flash_kb: 1024
+    saturation_threshold_kb: 102
+    cpu_cores: 1
+    accepted_classes: [lightweight, moderate, heavy]
+
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 4000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 8
+      moderate: 8
+      heavy: 6
+      very_heavy: 2

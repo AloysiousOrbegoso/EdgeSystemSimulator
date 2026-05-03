@@ -1,0 +1,42 @@
+# Beta Testing
+#
+# 24 tasks via dynamic arrivals (8 at t=0, 16 dripped at 1 every 2s).
+# Five trials. Verifies system stability under realistic conditions.
+
+test_id: beta
+type: beta
+description: |
+  Dynamic arrival pattern with mixed memory requirements; tests that
+  the system remains stable across runtime changes in workload and
+  memory pressure.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 110000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 3
+      moderate: 2
+      heavy: 2
+      very_heavy: 1
+  - generator:
+      start: 2.0
+      interval: 2.0
+      count: 16
+      mix:
+        lightweight: 5
+        moderate: 5
+        heavy: 4
+        very_heavy: 2
+
+assertions:
+  - scheduler_did_not_hang
+  - no_node_crashed
+  - all_tasks_have_terminal_status
+  - no_unsupported_allocations
+  - valid_scheduling_decisions_throughout

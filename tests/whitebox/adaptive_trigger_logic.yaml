@@ -1,0 +1,44 @@
+# White-Box: Adaptive Trigger Logic
+#
+# Force edge2 to ~80% memory, then submit moderate/heavy tasks. The
+# adaptive algorithm should redirect them to edge3/edge4 (via inflated
+# Q_n on edge2). Plain Min-Min would still consider edge2 freely.
+# This test runs ONLY for adaptive_min_min — including min_min would
+# guarantee a "no redirection" failure that's not actually a bug.
+
+test_id: whitebox_adaptive_trigger_logic
+type: whitebox
+description: |
+  Inject 80 KB on edge2 then submit moderate+heavy load; verify
+  adaptive redirects away from the saturated node.
+
+nodes: heterogeneous_4node
+algorithms:
+  - adaptive_min_min       # min_min would always fail this assertion
+trials: 1
+seed: 140000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 6
+      moderate: 5
+      heavy: 5
+      very_heavy: 4
+
+events:
+  - at: 4.0
+    type: inject_memory
+    node_id: edge2
+    kb: 80
+    hold_seconds: 30
+  - at: 4.5
+    type: submit_tasks
+    tasks:
+      moderate: 3
+      heavy: 2
+
+assertions:
+  - adaptive_trigger_activated
+  - no_unsupported_allocations
+  - all_tasks_have_terminal_status

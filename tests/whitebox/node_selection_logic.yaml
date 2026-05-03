@@ -1,0 +1,34 @@
+# White-Box: Edge Node Selection Logic
+#
+# 12 tasks; verify each task is assigned to a feasible edge node per
+# class + memory rules. Lightweight to anywhere; moderate not on edge1;
+# heavy on edges 2/3/4 with sufficient memory; very_heavy on edge3/4
+# only.
+
+test_id: whitebox_node_selection_logic
+type: whitebox
+description: |
+  Verifies that placement respects accepted_classes and capacity rules
+  for every task.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 1
+seed: 130000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 3
+      moderate: 3
+      heavy: 3
+      very_heavy: 3
+
+assertions:
+  - no_unsupported_allocations
+  - edge1_only_lightweight
+  - very_heavy_only_on_edge3_or_edge4
+  - sufficient_memory_for_each_assignment
+  - all_tasks_have_terminal_status

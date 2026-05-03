@@ -1,0 +1,37 @@
+# Dynamic Task Arrival Test Case
+#
+# 8 tasks at t=0; 16 more tasks arriving 1 every 2 seconds (so the last
+# arrives at t=32s). Adaptive expected to continuously re-evaluate node
+# conditions and avoid sending later moderate/heavy/very_heavy tasks to
+# already-saturated nodes.
+
+name: dynamic_arrival
+description: |
+  8 tasks at t=0, then 16 tasks streamed at 1 every 2s.
+  Total: 24 tasks (8 lightweight, 6 moderate, 6 heavy, 4 very_heavy).
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 7000
+
+arrivals:
+  # Initial burst at t=0
+  - at: 0.0
+    tasks:
+      lightweight: 4
+      moderate: 2
+      heavy: 1
+      very_heavy: 1
+  # Drip generator: 16 more tasks, one every 2 seconds
+  - generator:
+      start: 2.0
+      interval: 2.0
+      count: 16
+      mix:
+        lightweight: 4
+        moderate: 4
+        heavy: 5
+        very_heavy: 3

@@ -1,0 +1,63 @@
+# Resource-Constrained Edge Node Test Case
+#
+# Same heterogeneous topology but with reduced usable RAM per node:
+#   edge1: 4 KB (was 5)
+#   edge2: 75 KB (was 90)
+#   edge3: 150 KB (was 185)
+#   edge4: 300 KB (was 364)
+#
+# Saturation thresholds are kept at 80% of TOTAL RAM (per the PDF the
+# 80% rule is on total RAM, not on usable). 24 mixed tasks at t=0.
+
+name: resource_constrained
+description: |
+  Heterogeneous 4-node config with tightened usable RAM. Stresses
+  fit decisions, especially for heavy and very_heavy tasks.
+
+nodes:
+  - node_id: edge1
+    url: http://edge1:5000
+    total_ram_kb: 8
+    usable_ram_kb: 4
+    flash_kb: 256
+    saturation_threshold_kb: 6
+    cpu_cores: 1
+    accepted_classes: [lightweight]
+  - node_id: edge2
+    url: http://edge2:5000
+    total_ram_kb: 128
+    usable_ram_kb: 75
+    flash_kb: 1024
+    saturation_threshold_kb: 102
+    cpu_cores: 1
+    accepted_classes: [lightweight, moderate, heavy]
+  - node_id: edge3
+    url: http://edge3:5000
+    total_ram_kb: 264
+    usable_ram_kb: 150
+    flash_kb: 2048
+    saturation_threshold_kb: 211
+    cpu_cores: 2
+    accepted_classes: [lightweight, moderate, heavy, very_heavy]
+  - node_id: edge4
+    url: http://edge4:5000
+    total_ram_kb: 520
+    usable_ram_kb: 300
+    flash_kb: 4096
+    saturation_threshold_kb: 416
+    cpu_cores: 4
+    accepted_classes: [lightweight, moderate, heavy, very_heavy]
+
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 9000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 8
+      moderate: 7
+      heavy: 6
+      very_heavy: 3

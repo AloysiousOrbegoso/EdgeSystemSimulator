@@ -1,0 +1,40 @@
+# Node Saturation Test Case
+#
+# 14 tasks at t=0; at t=6s, inject 80 KB on edge2 to push it past 80%
+# memory utilization; at t=6.5s, submit the remaining 10 tasks. Adaptive
+# expected to detect edge2's high queueing delay (via inflated R_n) and
+# redirect moderate/heavy tasks to edge3 / edge4.
+
+name: node_saturation
+description: |
+  14 tasks at t=0 then artificial 80 KB injection on edge2 followed
+  by 10 more tasks. Tests adaptive trigger behavior under stress.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 10000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 5
+      moderate: 5
+      heavy: 3
+      very_heavy: 1
+
+events:
+  - at: 6.0
+    type: inject_memory
+    node_id: edge2
+    kb: 80
+    hold_seconds: 60
+  - at: 6.5
+    type: submit_tasks
+    tasks:
+      lightweight: 4
+      moderate: 3
+      heavy: 2
+      very_heavy: 1

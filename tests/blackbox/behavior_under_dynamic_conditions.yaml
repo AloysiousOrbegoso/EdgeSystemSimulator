@@ -1,0 +1,38 @@
+# Black-Box: Behavior Under Dynamic Conditions
+#
+# 16 tasks at t=0, 12-task spike at t=10s. Five trials. Verifies system
+# resilience to sudden workload changes.
+
+test_id: blackbox_behavior_under_dynamic_conditions
+type: blackbox
+description: |
+  Spike-arrival pattern (matches scenarios/08_task_spike.yaml) repeated
+  5 times to verify dynamic-condition stability.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 180000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 6
+      moderate: 4
+      heavy: 4
+      very_heavy: 2
+  - at: 10.0
+    tasks:
+      lightweight: 4
+      moderate: 3
+      heavy: 3
+      very_heavy: 2
+
+assertions:
+  - scheduler_did_not_hang
+  - no_node_crashed
+  - all_tasks_have_terminal_status
+  - no_unsupported_allocations
+  - valid_scheduling_decisions_throughout

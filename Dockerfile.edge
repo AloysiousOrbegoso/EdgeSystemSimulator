@@ -1,0 +1,43 @@
+# Edge node image. Build context is the project root so we can copy the
+# `shared/` package (the wire-format models) alongside `edge/`.
+#
+# Same image is run four times in docker-compose.yml with different env
+# vars (NODE_ID, TOTAL_RAM_KB, etc.) to produce edge1..edge4.
+
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=/app
+WORKDIR /app
+
+# Install only what the edge node uses. The full requirements.txt
+# includes pandas/scipy/matplotlib for the scheduler's analysis layer;
+# we don't need those here, so list edge deps explicitly to keep the
+# image small and the build fast.
+RUN pip install \
+        "fastapi>=0.110,<1.0" \
+        "uvicorn[standard]>=0.27,<1.0" \
+        "pydantic>=2.6,<3.0" \
+        "prometheus-client>=0.20,<1.0"
+
+# Copy the two packages this service needs.
+COPY shared/ /app/shared/
+COPY edge/   /app/edge/
+
+# Drop privileges. The edge node only writes to its own memory; no
+# bind mounts, no /tmp churn — running as non-root is straightforward.
+RUN useradd --create-home --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 5000
+
+# Healthcheck so docker compose ps shows status meaningfully.
+HEALTHCHECK --interval=10s --timeout=2s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request, sys; \
+        sys.exit(0 if urllib.request.urlopen('http://localhost:5000/health', timeout=1).status == 200 else 1)"
+
+CMD ["uvicorn", "edge.edgenode:app", "--host", "0.0.0.0", "--port", "5000"]

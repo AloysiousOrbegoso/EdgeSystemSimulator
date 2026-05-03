@@ -1,0 +1,29 @@
+# Low Workload Test Case (per HotfixHive_TestCases.pdf)
+#
+# 12 tasks submitted at t=0, distributed across the four edge nodes.
+# Composition: 4 lightweight, 4 moderate, 3 heavy, 1 very_heavy.
+#
+# Objective: evaluate scheduler behavior under minimal system demand
+# while still exposing the algorithm to varied memory requirements.
+# Expected: all 12 tasks complete; no task exceeding 5KB on edge1;
+# memory utilization stable; little or no saturation.
+
+name: low_workload
+description: |
+  12 tasks at t=0, mixed memory classes, heterogeneous 4-node config.
+  Establishes baseline behavior under minimal load.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min          
+trials: 5
+seed_base: 1000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 4
+      moderate: 4
+      heavy: 3
+      very_heavy: 1

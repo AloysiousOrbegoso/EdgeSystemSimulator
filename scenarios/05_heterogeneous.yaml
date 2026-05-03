@@ -1,0 +1,25 @@
+# Heterogeneous Edge Node Test Case
+#
+# Default 4-node heterogeneous configuration with 24 mixed tasks at t=0.
+# Companion to the homogeneous case; expected to expose adaptive's
+# stronger memory-aware assignment behavior.
+
+name: heterogeneous
+description: |
+  Default heterogeneous 4-node config; 24 tasks at t=0
+  (8 lightweight, 7 moderate, 6 heavy, 3 very_heavy).
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 5000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 8
+      moderate: 7
+      heavy: 6
+      very_heavy: 3

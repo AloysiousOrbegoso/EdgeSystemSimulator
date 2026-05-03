@@ -1,0 +1,35 @@
+# Black-Box: Correct Scheduling Output
+#
+# 16 tasks; verifies that output (assignment records, completion status,
+# memory utilization data) is correct and complete. Same assertions
+# white-box tests use, but framed as a contract over external behavior.
+
+test_id: blackbox_correct_scheduling_output
+type: blackbox
+description: |
+  16 tasks at t=0; verify the scheduler emits valid task-to-node
+  assignments with no unsupported allocations.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 1
+seed: 160000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 5
+      moderate: 4
+      heavy: 4
+      very_heavy: 3
+
+assertions:
+  - all_tasks_have_terminal_status
+  - no_unsupported_allocations
+  - no_duplicate_assignments
+  - all_assignments_logged
+  - sufficient_memory_for_each_assignment
+  - edge1_only_lightweight
+  - very_heavy_only_on_edge3_or_edge4

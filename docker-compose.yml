@@ -1,0 +1,147 @@
+# Full testbed stack.
+#
+# Brings up:
+#   - 4 edge nodes (edge1..edge4) with the heterogeneous resource profile
+#   - 1 scheduler service that auto-registers the four edges on startup
+#   - 1 dashboard (Streamlit) that talks to the scheduler over HTTP
+#   - 1 Prometheus instance scraping the scheduler and edges
+#
+# Everything runs on an internal docker network. Ports exposed to the host:
+#   8000  scheduler API (FastAPI /docs at /docs)
+#   8501  dashboard (Streamlit)
+#   9090  prometheus
+#
+# Results land in ./results on the host (bind mount) and are SHARED with
+# the dashboard container so the Results page can read runs.csv, JSONL
+# event logs, and rendered PNGs without round-tripping through the
+# scheduler.
+#
+# Usage:
+#   docker compose up --build
+#   docker compose down
+#   docker compose logs -f scheduler
+
+services:
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: scheduler
+    ports:
+      - "8000:8000"
+    environment:
+      LOG_LEVEL: INFO
+      SCHEDULER_AUTOREGISTER: "1"
+      RESULTS_DIR: "/app/results"
+    volumes:
+      - ./results:/app/results
+      - ./scenarios:/app/scenarios:ro
+      - ./tests:/app/tests:ro
+    depends_on:
+      - edge1
+      - edge2
+      - edge3
+      - edge4
+    networks: [testbed]
+    restart: unless-stopped
+
+  edge1:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    container_name: edge1
+    environment:
+      NODE_ID: edge1
+      TOTAL_RAM_KB: "8"
+      USABLE_RAM_KB: "5"
+      FLASH_KB: "256"
+      CPU_CORES: "1"
+      ACCEPTED_CLASSES: "lightweight"
+    networks: [testbed]
+    restart: unless-stopped
+
+  edge2:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    container_name: edge2
+    environment:
+      NODE_ID: edge2
+      TOTAL_RAM_KB: "128"
+      USABLE_RAM_KB: "90"
+      FLASH_KB: "1024"
+      CPU_CORES: "1"
+      ACCEPTED_CLASSES: "lightweight,moderate,heavy"
+    networks: [testbed]
+    restart: unless-stopped
+
+  edge3:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    container_name: edge3
+    environment:
+      NODE_ID: edge3
+      TOTAL_RAM_KB: "264"
+      USABLE_RAM_KB: "185"
+      FLASH_KB: "2048"
+      CPU_CORES: "2"
+      ACCEPTED_CLASSES: "lightweight,moderate,heavy,very_heavy"
+    networks: [testbed]
+    restart: unless-stopped
+
+  edge4:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    container_name: edge4
+    environment:
+      NODE_ID: edge4
+      TOTAL_RAM_KB: "520"
+      USABLE_RAM_KB: "364"
+      FLASH_KB: "4096"
+      CPU_CORES: "4"
+      ACCEPTED_CLASSES: "lightweight,moderate,heavy,very_heavy"
+    networks: [testbed]
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      SCHEDULER_BASE_URL: "http://scheduler:8000"
+      RESULTS_DIR: "/app/results"
+      SCENARIOS_DIR: "/app/scenarios"
+      TESTS_DIR: "/app/tests"
+    volumes:
+      - ./results:/app/results
+      - ./scenarios:/app/scenarios:ro
+      - ./tests:/app/tests:ro
+    depends_on:
+      - scheduler
+    networks: [testbed]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - scheduler
+      - edge1
+      - edge2
+      - edge3
+      - edge4
+    networks: [testbed]
+    restart: unless-stopped
+
+networks:
+  testbed:
+    driver: bridge

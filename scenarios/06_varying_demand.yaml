@@ -1,0 +1,27 @@
+# Varying Task Memory Demand Test Case
+#
+# 24 tasks at t=0 split evenly across the four classes (6 per class).
+# Tests whether the scheduler correctly matches tasks to nodes based on
+# memory feasibility. Adaptive expected to keep edge1 lightweight-only,
+# avoid moderate-or-larger on edge1, manage heavy carefully on edge2,
+# and direct very_heavy to edge3/edge4.
+
+name: varying_demand
+description: |
+  6 tasks each of lightweight, moderate, heavy, very_heavy.
+  Stresses class-feasibility rules across all classes equally.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 6000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 6
+      moderate: 6
+      heavy: 6
+      very_heavy: 6

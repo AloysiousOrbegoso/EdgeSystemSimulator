@@ -1,0 +1,25 @@
+# High Workload Test Case
+#
+# 40 tasks at t=0 — high task density and contention for limited RAM.
+# Expected: adaptive scheduler outperforms baseline by reducing failed/
+# inefficient memory allocations and minimizing overload on smaller nodes.
+
+name: high_workload
+description: |
+  40 mixed tasks at t=0 (12 lightweight, 10 moderate, 10 heavy, 8 very_heavy).
+  Tests behavior under high task density and strong contention.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 5
+seed_base: 3000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 12
+      moderate: 10
+      heavy: 10
+      very_heavy: 8

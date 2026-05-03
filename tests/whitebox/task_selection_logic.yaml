@@ -1,0 +1,33 @@
+# White-Box: Task Selection Logic
+#
+# 12 tasks with known memory requirements (4 lightweight + 3 moderate +
+# 3 heavy + 2 very_heavy). Verifies the scheduler selects tasks per the
+# implemented algorithm logic, with deviations only when memory or
+# adaptive conditions require them.
+
+test_id: whitebox_task_selection_logic
+type: whitebox
+description: |
+  Single-trial selection-logic check for both algorithms.
+
+nodes: heterogeneous_4node
+algorithms:
+  - min_min
+  - adaptive_min_min
+trials: 1
+seed: 120000
+
+arrivals:
+  - at: 0.0
+    tasks:
+      lightweight: 4
+      moderate: 3
+      heavy: 3
+      very_heavy: 2
+
+assertions:
+  - all_tasks_have_terminal_status
+  - no_duplicate_assignments
+  - all_assignments_logged
+  - no_unsupported_allocations
+  - valid_scheduling_decisions_throughout
