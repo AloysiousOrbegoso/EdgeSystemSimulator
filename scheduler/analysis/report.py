@@ -278,11 +278,11 @@ def _section_caveats(df: pd.DataFrame) -> str:
 
     # Tasks-rejected fraction higher than 5% on any row.
     if "tasks_rejected" in df.columns and "tasks_total" in df.columns:
-        with pd.option_context("mode.use_inf_as_na", True):
-            high_reject = df[
-                (df["tasks_total"] > 0)
-                & (df["tasks_rejected"] / df["tasks_total"] > 0.05)
-            ]
+        # Compute rejection ratio defensively; treat divide-by-zero and
+        # NaN as "not high reject" rather than relying on the deprecated
+        # use_inf_as_na option.
+        ratio = df["tasks_rejected"] / df["tasks_total"].replace(0, pd.NA)
+        high_reject = df[(df["tasks_total"] > 0) & (ratio > 0.05).fillna(False)]
         if not high_reject.empty:
             notes.append(
                 f"- {len(high_reject)} trials had >5% tasks rejected by the "
