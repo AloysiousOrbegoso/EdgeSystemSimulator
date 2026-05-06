@@ -320,51 +320,38 @@ def _reconcile_loop() -> None:
 
 
 def _observe_completions(node_id: str, runtime: NodeRuntimeStatus) -> None:
+    """Process completions reported by the edge node directly.
+
+    Edges include `recent_completions` in /status responses with true
+    execution durations. The scheduler uses those durations for EWMA
+    updates and as the basis for releasing reservations — replacing the
+    previous count-subtraction heuristic, which was biased by reconcile
+    poll latency and produced systematically low μ̂ estimates that
+    starved certain nodes.
+
+    Tasks reported in `recent_completions` that the scheduler doesn't
+    have in its in-flight set (e.g., late-arriving callbacks across a
+    /trial/reset boundary) are silently ignored.
+    """
     if _node_state is None or _recorder is None or _learned is None:
         return
-
-    now = time.time()
-    # Only consider tasks dispatched at least one reconcile interval ago.
-    # Tasks dispatched in the last RECONCILE_INTERVAL seconds may not yet
-    # be reflected in the edge's active_task_count and would otherwise be
-    # falsely "completed" by counting drop.
-    grace = RECONCILE_INTERVAL_SECONDS
+    if not runtime.recent_completions:
+        return
 
     with _inflight_lock:
-        in_flight_ids = list(_inflight.get(node_id, set()))
-        if not in_flight_ids:
-            return
-        # Filter: only tasks old enough that their dispatch should have
-        # been observed by the edge.
-        eligible_ids = [
-            tid for tid in in_flight_ids
-            if (now - _dispatched_tasks.get(tid, (None, now))[1]) >= grace
-        ]
-        if not eligible_ids:
-            return
-
-        eligible_ids.sort(
-            key=lambda tid: _dispatched_tasks.get(tid, (None, 0.0))[1]
-        )
-        # Compare actual count against ALL in-flight (not just eligible),
-        # because the edge knows about all of them. We just don't release
-        # ineligible ones.
-        expected_count = len(in_flight_ids)
-        actual_count = runtime.active_task_count
-        to_release_count = max(0, expected_count - actual_count)
-        if to_release_count == 0:
-            return
-        # Cap releases to eligible tasks only.
-        to_release_count = min(to_release_count, len(eligible_ids))
-        completed_ids = eligible_ids[:to_release_count]
-
-        for tid in completed_ids:
+        for completion in runtime.recent_completions:
+            tid = completion.task_id
+            in_flight_set = _inflight.get(node_id, set())
+            if tid not in in_flight_set:
+                # Stale callback — task isn't tracked by the scheduler
+                # right now (likely cleared by /trial/reset).
+                continue
             entry = _dispatched_tasks.pop(tid, None)
-            _inflight[node_id].discard(tid)
+            in_flight_set.discard(tid)
             if entry is None:
                 continue
-            task, dispatched_at = entry
-            duration = time.time() - dispatched_at
+            task, _dispatched_at = entry
+            duration = float(completion.duration_seconds)
             _node_state.release(node_id, tid, task.workload_units)
             _recorder.record_task_completed(tid, node_id, duration)
             _learned.update_service_rate(
@@ -372,7 +359,9 @@ def _observe_completions(node_id: str, runtime: NodeRuntimeStatus) -> None:
                 workload_units=task.workload_units,
                 observed_duration_seconds=duration,
             )
-            SCHED_LEARNED_MU.labels(node_id=node_id).set(_learned.get_mu(node_id))
+            SCHED_LEARNED_MU.labels(node_id=node_id).set(
+                _learned.get_mu(node_id)
+            )
 
 
 # ---------------------------------------------------------------------------

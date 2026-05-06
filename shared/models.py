@@ -148,6 +148,17 @@ class NodeSpec(BaseModel):
     )
     is_active: bool = True
 
+class RecentCompletion(BaseModel):
+    """One task that finished on this edge since the last status poll."""
+
+    task_id: str
+    task_class: TaskClass
+    duration_seconds: float = Field(
+        ..., gt=0.0, description="True wall-clock execution time on the edge"
+    )
+    completed_at: float = Field(
+        ..., description="Edge-side wall-clock time when the task finished"
+    )
 
 class NodeRuntimeStatus(BaseModel):
     """Live state of one edge node, as observed by the scheduler.
@@ -165,9 +176,9 @@ class NodeRuntimeStatus(BaseModel):
     cpu_utilization_pct: float = 0.0
     is_cpu_saturated: bool = False
     active_task_count: int = 0
-    last_seen: float | None = None
+    last_seen: float = 0.0
     error: str | None = None
-
+    recent_completions: list[RecentCompletion] = Field(default_factory=list)
 
 class NodeView(BaseModel):
     """The view of a node that an algorithm sees during scheduling.

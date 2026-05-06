@@ -261,7 +261,18 @@ class ExecutionEngine:
             if limit >= len(self._completion_history):
                 return list(self._completion_history)
             return list(self._completion_history[-limit:])
+        
+    def drain_recent_completions(self) -> list[CompletionRecord]:
+        """Return all completions since the last call and clear the buffer.
 
+        Used by the FastAPI /status handler to send a one-shot list of true
+        durations to the scheduler. Each completion is reported exactly once;
+        successive calls return only completions that happened in the meantime.
+        """
+        with self._lock:
+            completions = list(self._completion_history)
+            self._completion_history.clear()
+            return completions
     # ---------------------------------------------------------------
     # Lifecycle — called by /admin/reset between trials
     # ---------------------------------------------------------------

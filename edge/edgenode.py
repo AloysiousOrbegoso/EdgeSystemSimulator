@@ -358,9 +358,23 @@ def _build_runtime_status(
 ) -> NodeRuntimeStatus:
     """Assemble the live state slice of a /status response."""
     import time as _time
+    from shared.models import RecentCompletion
 
     mem_snap = mem.snapshot()
     cpu_snap = cpu.snapshot()
+    # Drain completions since last poll. The scheduler consumes these for
+    # accurate μ̂_n EWMA updates, free of reconcile-poll latency bias.
+    drained = engine.drain_recent_completions()
+    recent = [
+        RecentCompletion(
+            task_id=c.task_id,
+            task_class=c.task_class,
+            duration_seconds=c.duration_seconds,
+            completed_at=c.completed_at,
+        )
+        for c in drained
+        if c.status == "completed" and c.duration_seconds > 0
+    ]
     return NodeRuntimeStatus(
         reachable=True,
         used_ram_kb=int(mem_snap["used_ram_kb"]),
@@ -372,6 +386,7 @@ def _build_runtime_status(
         active_task_count=engine.active_task_count(),
         last_seen=_time.time(),
         error=None,
+        recent_completions=recent,
     )
 
 
