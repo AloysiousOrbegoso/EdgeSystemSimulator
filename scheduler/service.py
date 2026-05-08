@@ -548,8 +548,7 @@ class Ack(BaseModel):
 @app.post("/submit_task", response_model=SubmitTaskResponse)
 def submit_task(task: Task) -> SubmitTaskResponse:
     _, queue, _, recorder, _ = _require_initialized()
-    if not task.submitted_at:
-        task = task.model_copy(update={"submitted_at": time.time()})
+    task = task.model_copy(update={"submitted_at": time.time()})
     enqueued = queue.enqueue(task)
     if enqueued:
         SCHED_TASKS_SUBMITTED_TOTAL.inc()
@@ -563,10 +562,8 @@ def submit_task(task: Task) -> SubmitTaskResponse:
 def submit_batch(tasks: list[Task]) -> SubmitBatchResponse:
     _, queue, _, recorder, _ = _require_initialized()
     now = time.time()
-    stamped = [
-        t.model_copy(update={"submitted_at": now}) if not t.submitted_at else t
-        for t in tasks
-    ]
+    # Always overwrite submitted_at — see submit_task for rationale.
+    stamped = [t.model_copy(update={"submitted_at": now}) for t in tasks]
     added = queue.enqueue_many(stamped)
     SCHED_TASKS_SUBMITTED_TOTAL.inc(added)
     for t in stamped:
